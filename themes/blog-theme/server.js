@@ -42,5 +42,8 @@ app.all(
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Express server listening on port ${port}`);
+  // mystmd's `myst start` / `myst build --html` parses this stdout line for
+  // the "server ready" signal — it specifically scans for "http://" to detect
+  // when to begin crawling. Don't change the format.
+  console.log(`Express server listening at http://localhost:${port}`);
 });
