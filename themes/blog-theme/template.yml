@@ -111,10 +111,19 @@ parts:
       strips, image banners, or affiliation marks.
     required: false
 build:
-  install: npm ci --ignore-scripts
+  # Full install + prod:build. The cd to workspace root is required so
+  # patch-package (a root devDependency) is available when the root's
+  # postinstall fires — without it, @jupyter-widgets CSS imports break the
+  # remix build. After install, cd back into the theme dir for prod:build,
+  # which compiles app/, builds tailwind, and writes public/build/_assets/
+  # + build/index.js that server.js then serves.
+  install: cd ../.. && npm install --legacy-peer-deps && cd themes/blog-theme && npm run prod:build
   start: npm run start
 files:
   - server.js
   - package.json
-  - public/**/*
-  - build/**/*
+  # public/** and build/** are produced by `npm run prod:build` (called from
+  # build.install above) — they are NOT in the repo. Listing them here would
+  # cause mystmd's template validation to fail before the install step has
+  # had a chance to create them. mystmd's static-html crawler still copies
+  # all of public/ into the output regardless of this list.
