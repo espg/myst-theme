@@ -1,0 +1,24 @@
+node_modules
+
+.cache
+.env
+.vercel
+.output
+.turbo
+.yalc
+yalc.lock
+
+# Build artifacts ARE committed in this fork — see top-level README about
+# why (mystmd local-template stability + skips local rebuild dance). The
+# upstream book-theme ignores these; we deliberately don't.
+#
+# /public/build
+# /public/*thebe*
+# /public/service-worker-*.js
+# /public/service-worker.js
+# /api/*
+# /build/*
+# /app/styles/app.css
+
+# This is ignored as it is built
+remix.config.js
