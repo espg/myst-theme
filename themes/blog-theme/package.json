@@ -14,7 +14,7 @@
     "prod:build": "npm run prod:copy && npm run build:thebe && npm run build:css && remix build",
     "dev:css": "tailwindcss -w -i ./styles/app.css -o app/styles/app.css",
     "dev": "npm run dev:copy && npm run build:thebe && concurrently \"npm run dev:css\" \"remix dev\"",
-    "start": "npm run build:css && remix dev"
+    "start": "node ./server.js"
   },
   "dependencies": {
     "@myst-theme/common": "^1.3.0",
@@ -24,9 +24,14 @@
     "@myst-theme/providers": "^1.3.0",
     "@myst-theme/site": "^1.3.0",
     "@myst-theme/styles": "^1.3.0",
+    "@remix-run/express": "^1.17.0",
     "@remix-run/node": "~1.17.0",
     "@remix-run/react": "~1.17.0",
     "@remix-run/vercel": "~1.17.0",
+    "compression": "^1.7.4",
+    "express": "^4.18.2",
+    "get-port": "^5.1.1",
+    "morgan": "^1.10.0",
     "myst-common": "^1.8.1",
     "myst-config": "^1.8.1",
     "myst-migrate": "^1.7.1",
