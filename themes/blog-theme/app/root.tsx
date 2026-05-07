@@ -155,6 +155,44 @@ export default function AppWithReload() {
         })();`
       : null;
 
+  // blog-theme: when a parts.header element exists, the sidebars' inline
+  // `top:60px` (theme default for navbar height) doesn't reflect the actual
+  // banner-header height. This script measures the banner on hydrate and
+  // updates both sidebars' top on scroll: top = max(0, headerHeight - scrollY).
+  // Net behavior: sidebars sit BELOW the header at the top of the page, then
+  // slide up to viewport top once the header has scrolled away.
+  // Only the LEFT primary navigation sidebar needs JS-driven top updates;
+  // it's position:fixed and its top doesn't track scroll naturally. The
+  // RIGHT outline is position:sticky (Tailwind lg:sticky from the theme)
+  // with top:0, which gives the desired below-banner-then-pin behavior on
+  // its own.
+  // setProperty('top', x, 'important') beats both inline and !important
+  // CSS rules so the JS-set value always wins over fallbacks.
+  const sidebarOffsetScript = `(() => {
+    if (typeof window === 'undefined') return;
+    const HEADER_SELECTOR = '.myst-blog-site-header';
+    const SIDEBAR_SELECTOR = '.myst-primary-sidebar';
+    let headerHeight = 0;
+    const measure = () => {
+      const h = document.querySelector(HEADER_SELECTOR);
+      headerHeight = h ? h.offsetHeight : 0;
+    };
+    const update = () => {
+      const offset = Math.max(0, headerHeight - window.scrollY);
+      document.querySelectorAll(SIDEBAR_SELECTOR).forEach((el) => {
+        el.style.setProperty('top', offset + 'px', 'important');
+      });
+    };
+    const init = () => { measure(); update(); };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', () => { measure(); update(); });
+  })();`;
+
   return (
     <SearchFactoryProvider factory={searchFactory}>
       <Document
@@ -169,6 +207,9 @@ export default function AppWithReload() {
             <link rel="icon" href={`${BASE_URL || ''}/favicon.ico`} />
             <link rel="stylesheet" href={`${BASE_URL || ''}/myst-theme.css`} />
             {pinScript && <script dangerouslySetInnerHTML={{ __html: pinScript }} />}
+            <script dangerouslySetInnerHTML={{ __html: sidebarOffsetScript }} />
+            {/* The script above is harmless when there's no `.myst-blog-site-header`
+                (querySelector returns null → headerHeight = 0 → no offset applied). */}
           </>
         }
       >
