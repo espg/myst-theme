@@ -247,37 +247,40 @@ export function useHeaders(selector: string, maxdepth: number) {
   useEffect(() => {
     // Use the theme's top offset (navbar height) + a bit of padding for filtering active headings to avoid over-shooting the header.
     const OFFSET_PX = topOffset - 10;
-    // Prefer a heading marked as highlighted (e.g. focus/anchor) if one is currently intersecting.
-    const highlighted = intersecting!.reduce(
-      (a, b) => {
-        if (a) return a;
-        if (b.classList.contains('highlight')) return b.id;
-        return null;
-      },
-      null as string | null,
-    );
-    const intersectingElements = intersecting as HTMLElement[];
-    // Choose the heading closest to the navbar offset line within a viewport window under it.
-    // Using a window avoids a case where the active header is off screen the next header is way at the bottom of the screen.
-    let bestInActiveHeaderWindow: { el: HTMLElement; distance: number } | undefined;
-    const ACTIVE_WINDOW_PX = window.innerHeight * 0.33;
-    for (const el of intersectingElements) {
-      const distance = el.getBoundingClientRect().top - OFFSET_PX;
-      if (
-        // Only keep things under the navbar line
-        distance >= 0 &&
-        // Only keep things over the active window size
-        distance <= ACTIVE_WINDOW_PX &&
-        // Now if it's closer to the navbar line than the active element, update active
-        (!bestInActiveHeaderWindow || distance < bestInActiveHeaderWindow.distance)
-      ) {
-        bestInActiveHeaderWindow = { el, distance };
+    const computeActive = () => {
+      // Prefer a heading marked as highlighted (e.g. focus/anchor) if one is currently intersecting.
+      const highlighted = intersecting!.reduce(
+        (a, b) => {
+          if (a) return a;
+          if (b.classList.contains('highlight')) return b.id;
+          return null;
+        },
+        null as string | null,
+      );
+      // Pick the heading whose top has most recently passed the navbar
+      // offset line — that's the section the user is currently reading.
+      // Walk in document order keeping the last heading still above the line.
+      // Falls back to the first heading when scroll hasn't passed any yet.
+      // (Window-based "intersecting only" selection misses long sections
+      //  where the heading scrolls out before the next one enters the window.)
+      let active: HTMLElement | undefined;
+      for (const el of elements) {
+        if (el.getBoundingClientRect().top - OFFSET_PX <= 1) active = el;
+        else break;
       }
-    }
-    // If nothing is below the navbar line, keep the current active heading.
-    const active = bestInActiveHeaderWindow?.el;
-    if (highlighted || active) setActiveId(highlighted || active?.id);
-  }, [intersecting, topOffset]);
+      if (!active) active = elements[0];
+      if (highlighted || active) setActiveId(highlighted || active?.id);
+    };
+    computeActive();
+    // Recompute on scroll too — IntersectionObserver only fires on entry/exit,
+    // which leaves the active state stuck while scrolling inside a long section.
+    const onScroll = throttle(computeActive, 100, { trailing: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      onScroll.cancel();
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [intersecting, elements, topOffset]);
 
   const [headings, setHeadings] = useState<Heading[]>([]);
   useEffect(() => {
